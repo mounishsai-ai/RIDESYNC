@@ -1,14 +1,6 @@
 // RideSync Driver App — Sign Up Screen
-//
-// New drivers register with Name + Username + Password only. No email required.
-// Internally we build a fake email (username@ridesync.driver) for Supabase Auth.
-//
-// On success:
-//   1. Checks username is not already taken
-//   2. Creates a Supabase Auth account using the fake email
-//   3. Inserts a row into the `drivers` table (name + username + auth_id)
-//   4. The DB auto-generates their unique short_code (e.g. DRV007)
-//   5. We show them their code and save their profile locally
+// Custom Auth: No Supabase Auth, no emails, no rate limits.
+// Saves directly to the `drivers` table.
 
 import React, { useState } from 'react';
 import {
@@ -30,12 +22,6 @@ interface Props {
   onBackToLogin: () => void;
 }
 
-// Converts a username to the internal fake email Supabase Auth uses
-function usernameToEmail(username: string): string {
-  return `${username.trim().toLowerCase()}@ridesync.driver`;
-}
-
-// Validates: 3-20 chars, only letters/numbers/underscores
 function isValidUsername(username: string): boolean {
   return /^[a-zA-Z0-9_]{3,20}$/.test(username);
 }
@@ -57,7 +43,7 @@ export default function SignUpScreen({ onSignUpSuccess, onBackToLogin }: Props) 
     if (!name.trim()) { setError('Please enter your name.'); return; }
     if (!username.trim()) { setError('Please choose a username.'); return; }
     if (!isValidUsername(username)) {
-      setError('Username must be 3-20 characters and only contain letters, numbers, or underscores (no spaces).');
+      setError('Username must be 3-20 characters (letters, numbers, underscores only).');
       return;
     }
     if (password.length < 6) { setError('Password must be at least 6 characters.'); return; }
@@ -79,36 +65,25 @@ export default function SignUpScreen({ onSignUpSuccess, onBackToLogin }: Props) 
       return;
     }
 
-    // --- Step 2: Create Supabase Auth account using the fake email ---
-    const { data: authData, error: authErr } = await supabase.auth.signUp({
-      email: usernameToEmail(username),
-      password,
-    });
-
-    if (authErr || !authData.user) {
-      setError(authErr?.message || 'Sign up failed. Please try again.');
-      setLoading(false);
-      return;
-    }
-
-    // --- Step 3: Insert driver profile ---
+    // --- Step 2: Insert driver profile directly (NO EMAILS) ---
     const { data: driverData, error: driverErr } = await supabase
       .from('drivers')
       .insert({
         name: name.trim(),
         username: username.trim().toLowerCase(),
-        auth_id: authData.user.id,
+        password: password, // Storing password directly for custom auth
       })
       .select('id, name, short_code')
       .single();
 
     if (driverErr || !driverData) {
-      setError('Account created but profile setup failed. Please contact support.');
+      console.error(driverErr);
+      setError('Failed to create account. Did you run the SQL to add the password column?');
       setLoading(false);
       return;
     }
 
-    // --- Step 4: Save locally and show code ---
+    // --- Step 3: Save locally and show code ---
     await saveDriverProfile({ id: driverData.id, name: driverData.name });
 
     setDriverCode(driverData.short_code);
@@ -234,137 +209,28 @@ export default function SignUpScreen({ onSignUpSuccess, onBackToLogin }: Props) 
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#0F172A',
-  },
-  inner: {
-    paddingHorizontal: 28,
-    paddingTop: 60,
-    paddingBottom: 40,
-  },
-  header: {
-    alignItems: 'center',
-    marginBottom: 36,
-  },
+  container: { flex: 1, backgroundColor: '#0F172A' },
+  inner: { paddingHorizontal: 28, paddingTop: 60, paddingBottom: 40 },
+  header: { alignItems: 'center', marginBottom: 36 },
   logo: { fontSize: 48, marginBottom: 10 },
-  appName: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: '#F1F5F9',
-    letterSpacing: 1,
-  },
-  tagline: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#64748B',
-    letterSpacing: 3,
-    marginTop: 4,
-  },
+  appName: { fontSize: 28, fontWeight: '800', color: '#F1F5F9', letterSpacing: 1 },
+  tagline: { fontSize: 12, fontWeight: '600', color: '#64748B', letterSpacing: 3, marginTop: 4 },
   form: { marginBottom: 24 },
-  label: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#64748B',
-    letterSpacing: 1,
-    textTransform: 'uppercase',
-    marginBottom: 8,
-  },
-  input: {
-    backgroundColor: '#1E293B',
-    borderWidth: 1,
-    borderColor: '#334155',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 15,
-    color: '#E2E8F0',
-    marginBottom: 8,
-  },
-  fieldHint: {
-    fontSize: 11,
-    color: '#475569',
-    marginBottom: 16,
-    marginTop: 0,
-  },
-  errorText: {
-    color: '#F87171',
-    fontSize: 13,
-    textAlign: 'center',
-    marginBottom: 12,
-  },
-  signUpButton: {
-    backgroundColor: '#10B981',
-    borderRadius: 12,
-    paddingVertical: 16,
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  signUpButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '700',
-  },
+  label: { fontSize: 12, fontWeight: '600', color: '#64748B', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 8 },
+  input: { backgroundColor: '#1E293B', borderWidth: 1, borderColor: '#334155', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 14, fontSize: 15, color: '#E2E8F0', marginBottom: 8 },
+  fieldHint: { fontSize: 11, color: '#475569', marginBottom: 16, marginTop: 0 },
+  errorText: { color: '#F87171', fontSize: 13, textAlign: 'center', marginBottom: 12 },
+  signUpButton: { backgroundColor: '#10B981', borderRadius: 12, paddingVertical: 16, alignItems: 'center', marginTop: 8 },
+  signUpButtonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
   loginLink: { alignItems: 'center' },
-  loginLinkText: {
-    fontSize: 14,
-    color: '#64748B',
-  },
-
-  // ─── Success screen ────────────────────────────────────────────
-  successCard: {
-    flex: 1,
-    backgroundColor: '#0F172A',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 32,
-  },
+  loginLinkText: { fontSize: 14, color: '#64748B' },
+  successCard: { flex: 1, backgroundColor: '#0F172A', alignItems: 'center', justifyContent: 'center', padding: 32 },
   successEmoji: { fontSize: 56, marginBottom: 16 },
-  successTitle: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: '#F1F5F9',
-    marginBottom: 8,
-  },
-  successSubtitle: {
-    fontSize: 15,
-    color: '#94A3B8',
-    marginBottom: 20,
-  },
-  codeBox: {
-    backgroundColor: '#1E293B',
-    borderWidth: 2,
-    borderColor: '#10B981',
-    borderRadius: 16,
-    paddingHorizontal: 32,
-    paddingVertical: 20,
-    marginBottom: 16,
-  },
-  codeText: {
-    fontSize: 36,
-    fontWeight: '800',
-    color: '#10B981',
-    letterSpacing: 6,
-  },
-  codeHint: {
-    fontSize: 13,
-    color: '#64748B',
-    textAlign: 'center',
-    lineHeight: 20,
-    marginBottom: 32,
-    paddingHorizontal: 8,
-  },
-  continueButton: {
-    backgroundColor: '#10B981',
-    borderRadius: 12,
-    paddingHorizontal: 32,
-    paddingVertical: 16,
-    width: '100%',
-    alignItems: 'center',
-  },
-  continueButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '700',
-  },
+  successTitle: { fontSize: 28, fontWeight: '800', color: '#F1F5F9', marginBottom: 8 },
+  successSubtitle: { fontSize: 15, color: '#94A3B8', marginBottom: 20 },
+  codeBox: { backgroundColor: '#1E293B', borderWidth: 2, borderColor: '#10B981', borderRadius: 16, paddingHorizontal: 32, paddingVertical: 20, marginBottom: 16 },
+  codeText: { fontSize: 36, fontWeight: '800', color: '#10B981', letterSpacing: 6 },
+  codeHint: { fontSize: 13, color: '#64748B', textAlign: 'center', lineHeight: 20, marginBottom: 32, paddingHorizontal: 8 },
+  continueButton: { backgroundColor: '#10B981', borderRadius: 12, paddingHorizontal: 32, paddingVertical: 16, width: '100%', alignItems: 'center' },
+  continueButtonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
 });

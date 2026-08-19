@@ -1,6 +1,6 @@
 // RideSync Driver App - Login Screen
-// Drivers log in with username + password only. No email required.
-// Internally we build a fake email (username@ridesync.driver) for Supabase Auth.
+// Custom Auth: No Supabase Auth, no emails.
+// Queries the `drivers` table directly.
 
 import React, { useState } from 'react';
 import {
@@ -21,11 +21,6 @@ interface Props {
   onGoToSignUp: () => void;
 }
 
-// Converts a username to the internal fake email Supabase Auth uses
-function usernameToEmail(username: string): string {
-  return `${username.trim().toLowerCase()}@ridesync.driver`;
-}
-
 export default function LoginScreen({ onLoginSuccess, onGoToSignUp }: Props) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -41,33 +36,20 @@ export default function LoginScreen({ onLoginSuccess, onGoToSignUp }: Props) {
     setLoading(true);
     setError(null);
 
-    // 1. Sign in with Supabase Auth using the fake email
-    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-      email: usernameToEmail(username),
-      password: password.trim(),
-    });
+    // --- Custom Auth: Check directly in the drivers table ---
+    const { data: driver, error: driverError } = await supabase
+      .from('drivers')
+      .select('id, name, short_code, password')
+      .eq('username', username.trim().toLowerCase())
+      .single();
 
-    if (authError) {
-      // Give a friendly message instead of Supabase's technical one
+    if (driverError || !driver || driver.password !== password) {
       setError('Incorrect username or password. Please try again.');
       setLoading(false);
       return;
     }
 
-    // 2. Fetch the driver profile linked to this auth user
-    const { data: driver, error: driverError } = await supabase
-      .from('drivers')
-      .select('id, name, short_code')
-      .eq('auth_id', authData.user.id)
-      .single();
-
-    if (driverError || !driver) {
-      setError('No driver profile found. Contact your school administrator.');
-      setLoading(false);
-      return;
-    }
-
-    // 3. Save the driver profile locally
+    // --- Save locally and succeed ---
     await saveDriverProfile({ id: driver.id, name: driver.name, short_code: driver.short_code });
 
     setLoading(false);
@@ -139,82 +121,18 @@ export default function LoginScreen({ onLoginSuccess, onGoToSignUp }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#0F172A',
-  },
-  inner: {
-    flex: 1,
-    justifyContent: 'center',
-    paddingHorizontal: 28,
-  },
-  branding: {
-    alignItems: 'center',
-    marginBottom: 48,
-  },
-  logo: {
-    fontSize: 56,
-    marginBottom: 12,
-  },
-  appName: {
-    fontSize: 32,
-    fontWeight: '800',
-    color: '#F1F5F9',
-    letterSpacing: 1,
-  },
-  tagline: {
-    fontSize: 16,
-    color: '#64748B',
-    fontWeight: '500',
-    marginTop: 4,
-    letterSpacing: 3,
-    textTransform: 'uppercase',
-  },
-  form: {
-    marginBottom: 32,
-  },
-  input: {
-    backgroundColor: '#1E293B',
-    borderWidth: 1,
-    borderColor: '#334155',
-    borderRadius: 12,
-    paddingHorizontal: 18,
-    paddingVertical: 16,
-    fontSize: 16,
-    color: '#E2E8F0',
-    marginBottom: 14,
-  },
-  errorText: {
-    color: '#F87171',
-    fontSize: 14,
-    marginBottom: 14,
-    textAlign: 'center',
-  },
-  loginButton: {
-    backgroundColor: '#10B981',
-    borderRadius: 12,
-    paddingVertical: 16,
-    alignItems: 'center',
-    marginTop: 4,
-  },
-  loginButtonDisabled: {
-    opacity: 0.6,
-  },
-  loginButtonText: {
-    color: '#FFFFFF',
-    fontSize: 17,
-    fontWeight: '700',
-  },
-  forgotNote: {
-    color: '#475569',
-    fontSize: 12,
-    textAlign: 'center',
-    marginTop: 14,
-  },
-  footer: {
-    textAlign: 'center',
-    color: '#475569',
-    fontSize: 13,
-    lineHeight: 20,
-  },
+  container: { flex: 1, backgroundColor: '#0F172A' },
+  inner: { flex: 1, justifyContent: 'center', paddingHorizontal: 28 },
+  branding: { alignItems: 'center', marginBottom: 48 },
+  logo: { fontSize: 56, marginBottom: 12 },
+  appName: { fontSize: 32, fontWeight: '800', color: '#F1F5F9', letterSpacing: 1 },
+  tagline: { fontSize: 16, color: '#64748B', fontWeight: '500', marginTop: 4, letterSpacing: 3, textTransform: 'uppercase' },
+  form: { marginBottom: 32 },
+  input: { backgroundColor: '#1E293B', borderWidth: 1, borderColor: '#334155', borderRadius: 12, paddingHorizontal: 18, paddingVertical: 16, fontSize: 16, color: '#E2E8F0', marginBottom: 14 },
+  errorText: { color: '#F87171', fontSize: 14, marginBottom: 14, textAlign: 'center' },
+  loginButton: { backgroundColor: '#10B981', borderRadius: 12, paddingVertical: 16, alignItems: 'center', marginTop: 4 },
+  loginButtonDisabled: { opacity: 0.6 },
+  loginButtonText: { color: '#FFFFFF', fontSize: 17, fontWeight: '700' },
+  forgotNote: { color: '#475569', fontSize: 12, textAlign: 'center', marginTop: 14 },
+  footer: { textAlign: 'center', color: '#475569', fontSize: 13, lineHeight: 20 },
 });
