@@ -5,7 +5,7 @@ import { ExpoConfig, ConfigContext } from 'expo/config';
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name: 'RideSync Driver',
-  slug: 'ridesync-driver',
+  slug: 'developerx',
   version: '1.0.0',
   orientation: 'portrait',
   icon: './assets/icon.png',
@@ -14,7 +14,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL,
     supabaseAnonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
     eas: {
-      projectId: process.env.EAS_PROJECT_ID,
+      projectId: 'c6748712-4447-4637-b003-84dee7d88b3b',
     },
   },
   ios: {

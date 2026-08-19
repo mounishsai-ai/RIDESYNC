@@ -13,7 +13,10 @@
         "NSLocationAlwaysAndWhenInUseUsageDescription": "RideSync needs your location to transmit your bus position to students in real-time, even when the app is in the background.",
         "NSLocationWhenInUseUsageDescription": "RideSync needs your location to show your current position on the map.",
         "NSLocationAlwaysUsageDescription": "RideSync needs background location access so students can track the bus even when this app is minimized.",
-        "UIBackgroundModes": ["location", "fetch"]
+        "UIBackgroundModes": [
+          "location",
+          "fetch"
+        ]
       }
     },
     "android": {
