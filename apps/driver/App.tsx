@@ -88,6 +88,16 @@ export default function App() {
     setScreen('route_select');
   }
 
+  async function handleLogout() {
+    const { clearDriverProfile } = await import('./src/lib/storage');
+    await clearDriverProfile();
+    setDriverId(null);
+    setDriverShortCode(null);
+    setSelectedRoute(null);
+    setActiveTripId(null);
+    setScreen('login');
+  }
+
   // ─── Render ─────────────────────────────────────────────────────────────
 
   if (screen === 'loading') {
@@ -122,6 +132,7 @@ export default function App() {
       <>
         <RouteBuilderScreen
           onRouteSelected={handleRouteSelected}
+          onLogout={handleLogout}
         />
         <StatusBar style="light" />
       </>

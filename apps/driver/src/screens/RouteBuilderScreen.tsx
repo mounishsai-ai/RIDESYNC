@@ -153,9 +153,10 @@ function buildMapHtml(routeColor: string): string {
 
 interface Props {
   onRouteSelected: (route: SavedRoute) => void;
+  onLogout?: () => void;
 }
 
-export default function RouteBuilderScreen({ onRouteSelected }: Props) {
+export default function RouteBuilderScreen({ onRouteSelected, onLogout }: Props) {
   // ── All hooks at the top – never inside conditionals ──────────────────────
   const [mode, setMode] = useState<ScreenMode>('list');
   const [routes, setRoutes] = useState<Route[]>([]);
@@ -365,8 +366,17 @@ export default function RouteBuilderScreen({ onRouteSelected }: Props) {
   if (mode === 'list') {
     return (
       <View style={styles.container}>
-        <Text style={styles.title}>Your Routes</Text>
-        <Text style={styles.subtitle}>Pick a saved route or create a new one.</Text>
+        <View style={styles.listHeaderRow}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.title}>Your Routes</Text>
+            <Text style={styles.subtitle}>Pick a saved route or create a new one.</Text>
+          </View>
+          {onLogout && (
+            <TouchableOpacity onPress={onLogout} style={styles.logoutButton}>
+              <Text style={styles.logoutButtonText}>Log Out</Text>
+            </TouchableOpacity>
+          )}
+        </View>
 
         {loading ? (
           <ActivityIndicator color="#10B981" style={{ marginTop: 32 }} />
@@ -577,6 +587,25 @@ const styles = StyleSheet.create({
     backgroundColor: '#0F172A',
     paddingTop: 60,
     paddingHorizontal: 20,
+  },
+  listHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  logoutButton: {
+    backgroundColor: '#1E293B',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#334155',
+  },
+  logoutButtonText: {
+    color: '#F87171',
+    fontWeight: '600',
+    fontSize: 14,
   },
   title: {
     fontSize: 26,
