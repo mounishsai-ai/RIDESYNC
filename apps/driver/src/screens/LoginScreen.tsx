@@ -1,5 +1,6 @@
 // RideSync Driver App - Login Screen
-// Simple login screen for drivers. Uses Supabase Auth.
+// Drivers log in with username + password only. No email required.
+// Internally we build a fake email (username@ridesync.driver) for Supabase Auth.
 
 import React, { useState } from 'react';
 import {
@@ -20,29 +21,35 @@ interface Props {
   onGoToSignUp: () => void;
 }
 
+// Converts a username to the internal fake email Supabase Auth uses
+function usernameToEmail(username: string): string {
+  return `${username.trim().toLowerCase()}@ridesync.driver`;
+}
+
 export default function LoginScreen({ onLoginSuccess, onGoToSignUp }: Props) {
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function handleLogin() {
-    if (!email.trim() || !password.trim()) {
-      setError('Please enter both email and password.');
+    if (!username.trim() || !password.trim()) {
+      setError('Please enter both username and password.');
       return;
     }
 
     setLoading(true);
     setError(null);
 
-    // 1. Sign in with Supabase Auth
+    // 1. Sign in with Supabase Auth using the fake email
     const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
+      email: usernameToEmail(username),
       password: password.trim(),
     });
 
     if (authError) {
-      setError(authError.message);
+      // Give a friendly message instead of Supabase's technical one
+      setError('Incorrect username or password. Please try again.');
       setLoading(false);
       return;
     }
@@ -55,7 +62,7 @@ export default function LoginScreen({ onLoginSuccess, onGoToSignUp }: Props) {
       .single();
 
     if (driverError || !driver) {
-      setError('No driver profile found for this account. Contact your admin.');
+      setError('No driver profile found. Contact your school administrator.');
       setLoading(false);
       return;
     }
@@ -84,11 +91,10 @@ export default function LoginScreen({ onLoginSuccess, onGoToSignUp }: Props) {
         <View style={styles.form}>
           <TextInput
             style={styles.input}
-            placeholder="Email"
+            placeholder="Username"
             placeholderTextColor="#475569"
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
+            value={username}
+            onChangeText={setUsername}
             autoCapitalize="none"
             autoCorrect={false}
           />
@@ -115,6 +121,10 @@ export default function LoginScreen({ onLoginSuccess, onGoToSignUp }: Props) {
               <Text style={styles.loginButtonText}>Log In</Text>
             )}
           </TouchableOpacity>
+
+          <Text style={styles.forgotNote}>
+            Forgot password? Contact your school administrator.
+          </Text>
         </View>
 
         <TouchableOpacity onPress={onGoToSignUp} style={{ alignItems: 'center' }}>
@@ -194,6 +204,12 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 17,
     fontWeight: '700',
+  },
+  forgotNote: {
+    color: '#475569',
+    fontSize: 12,
+    textAlign: 'center',
+    marginTop: 14,
   },
   footer: {
     textAlign: 'center',
