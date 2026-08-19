@@ -1,0 +1,35 @@
+# Dependencies
+node_modules/
+
+# Environment files - NEVER commit these
+.env
+.env.*
+!.env.example
+
+# Build outputs
+.next/
+dist/
+out/
+build/
+web-build/
+
+# Expo
+.expo/
+expo-env.d.ts
+
+# Native builds (generated)
+apps/driver/ios/
+apps/driver/android/
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# TypeScript
+*.tsbuildinfo
