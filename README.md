@@ -14,8 +14,7 @@
 
 ## 🎥 Demo
 
-<!-- DEMO: replace the URL below with your video link, then delete this comment -->
-**▶️ [Watch the 2-minute demo](REPLACE_WITH_YOUR_DEMO_VIDEO_URL)**
+https://github.com/user-attachments/assets/5f19b1e4-1bc1-4c55-b007-4372edb6d59e
 
 > _Screenshots / GIFs coming soon — the fastest way to make this repo pop for a reviewer._
 
