@@ -51,7 +51,7 @@ RideSync is a real-time bus tracking system for college students. The core probl
 
 ## Architecture in One Paragraph
 
-Driver app (React Native/Expo) uses `expo-task-manager` to run a background task that fires every 5 seconds (or every 10 meters of movement). Each location event is broadcast over a **Supabase Realtime channel** named `trip:{trip_id}`. Student web apps subscribe to that channel via WebSocket and receive coordinates in real-time. The bus position is drawn on a Leaflet/OpenStreetMap map. ETAs are calculated client-side using the Haversine formula (straight-line distance ÷ current speed). No server-side code runs during a live trip — everything is Supabase Realtime fan-out.
+Driver app (React Native/Expo) uses `expo-task-manager` to run a background task that fires every 5 seconds (or every 10 meters of movement). Each location event is broadcast over a **Supabase Realtime channel** named `trip:{trip_id}`. Student web apps subscribe to that channel via WebSocket and receive coordinates in real-time. The bus position is drawn on a Leaflet/OpenStreetMap map. ETAs are calculated from OSRM road-distance routing (with a Haversine straight-line fallback when the API is rate-limited). No server-side code runs during a live trip — everything is Supabase Realtime fan-out.
 
 For the full diagram, see [`system_design.md`](./system_design.md).
 
@@ -79,8 +79,8 @@ RIDESYNC/
 | File | What it does |
 |---|---|
 | `App.tsx` | Root navigator — switches between Login, RouteBuilder, Transmitting screens based on auth state |
-| `src/screens/LoginScreen.tsx` | Email/password login via Supabase Auth |
-| `src/screens/SignUpScreen.tsx` | Registration — creates auth user + driver profile row + displays auto-generated short_code |
+| `src/screens/LoginScreen.tsx` | Username/password login — queries the `drivers` table directly (custom auth, no Supabase Auth, no emails) |
+| `src/screens/SignUpScreen.tsx` | Registration — inserts a driver profile row + displays auto-generated short_code |
 | `src/screens/RouteBuilderScreen.tsx` | **Main setup screen.** Full-screen MapView. Driver taps the map to pin stops (no physical presence needed). Shows OSRM road polyline preview between stops. Saves route + stops to Supabase. |
 | `src/screens/TransmittingScreen.tsx` | **Daily use screen.** Big START/STOP button. Creates trip row, starts background tracking, shows elapsed time + LIVE indicator. |
 | `src/lib/locationService.ts` | **Core service.** Background GPS task definition, broadcast logic, offline queue (AsyncStorage), heartbeat, permission requests. Read this before touching location logic. |
